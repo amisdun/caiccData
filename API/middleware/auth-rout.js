@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
 
-var authenticate = (req,res,next)=>{
-    var token = req.headers.authorization.split(" ")[1];
-    jwt.verify(token, process.env.JWT_KEY,(err,decode)=>{
+var authenticate = (req,res,next) =>{
+    jwt.verify(req.query.token, process.env.JWT_KEY,(err,decode)=>{
         if(err){
             res.json({
                 message: "Unathorized access"

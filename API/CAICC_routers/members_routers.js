@@ -13,7 +13,7 @@ const membersDetalis = require("../../CAICC_models/members_model");
 const admin = require("../../CAICC_models/admin_model");
 const authenticate = require("../middleware/auth-rout");
 
-router.get("/membersData?token=token", authenticate ,(req,res,next) => {
+router.get("/admin/membersData?token=token", authenticate ,(req,res,next) => {
     membersDetalis.find({})
     .exec()
     .then(members =>{

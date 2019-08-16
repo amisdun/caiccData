@@ -1,10 +1,12 @@
 const jwt = require("jsonwebtoken");
 
 var authenticate = (req,res,next) =>{
-    jwt.verify(req.query.token, process.env.JWT_KEY,(err,decode)=>{
+    jwt.verify(req.query.token, "dbkdbkqrjgrvgcwtkrnhrigukbqk",(err,decode)=>{
         if(err){
             res.json({
-                message: "Unathorized access"
+                message: "an error has occured",
+                error: err
+                
             })
         }
         req.user = decode;

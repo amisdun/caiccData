@@ -2,18 +2,22 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const router = express.router(); 
+const router = express.Router(); 
 mongoose.Promise = global.Promise;
 //connecting to the database
-const url = "mongodb://localhost/caiccDB";
-const db = mongoose.connect(url);
-db.connection;
-
+const url = "mongodb://localhost/myDb";
+mongoose.connect(url);
+mongoose.connection.once("open",function(){
+    console.log("database connected succefully")
+}).on("error",function(){
+    console.log("an error occured")
+})
 const membersDetalis = require("../../CAICC_models/members_model");
 const admin = require("../../CAICC_models/admin_model");
 const authenticate = require("../middleware/auth-rout");
+require("../../index");
 
-router.get("/admin/membersData?token=token", authenticate ,(req,res,next) => {
+router.get("/admin", authenticate ,(req,res,next) => {
     membersDetalis.find({})
     .exec()
     .then(members =>{
@@ -37,36 +41,30 @@ router.get("/admin/membersData?token=token", authenticate ,(req,res,next) => {
     });
 })
 
-router.post("/",(req,res,next) => {
-    var details = {
-        _id: new mongoose.Types.ObjectId,
-        firstName: req.body.firstname,
-        lastName: req.body.lastname,
-        age: req.body.age,
-        occupation: req.body.occupation,
-        contactDetails: {
-            phoneNumber: req.body.phoneNum,
-            emailAddress: req.body.email
-        },
-        houseAddress: req.body.houseaddress,
-        gender: req.body.gender
-    }
-    var phone = {
-        contactDetails: {
-            phoneNumber: req.body.phoneNum,
-            emailAddress: req.body.email
-        }
-    }
-    membersDetalis.findOne({phone})
-    .exec()
-    .then(fone =>{
-        if(fone.length === 1){
+router.post("/membersData",(req,res,next) => {
+   var details = membersDetalis.find({"contactDetails.phoneNumber":req.body.phoneNum});
+    details.exec()
+    .then(detail =>{
+        if(detail.length >= 1){
             res.json({
-                message: "you have already registered as a member of CAICC"
+                message: "you have already registered as a member of CAICC",
             })
+            console.log(detail);
         }
         else{
-            var new_member = new membersDetalis({details});
+            var new_member = new membersDetalis({
+                            _id: new mongoose.Types.ObjectId,
+                    firstName: req.body.firstname,
+                    lastName: req.body.lastname,
+                    age: req.body.age,
+                    occupation: req.body.occupation,
+                    contactDetails: {
+                        phoneNumber: req.body.phoneNum,
+                        emailAddress: req.body.email
+                    },
+                    houseAddress: req.body.houseaddress,
+                    gender: req.body.gender
+                        });
             new_member
             .save()
             .then(detail =>{
@@ -89,39 +87,36 @@ router.post("/",(req,res,next) => {
 })
 //admin sighn up router
 router.post("/signup",(req,res,next) =>{
-    var signupDetails = {
-        userName: req.body.username,
-    };
-    admin.findOne({signupDetails})
+    admin.find({userName: req.body.username})
     .exec()
-    .then(user => {
-        if(user.length === 1){
-            res.json({
+    .then(users => {
+        if(users.length >= 1){
+            res.status(409).json({
                 message: "username already exist"
             })
         }
         else{
             bcrypt.hash(req.body.password, 10, (err,hash) =>{
                 if(err){
-                    res.json({
-                        error: err
+                    res.status(500).json({
+                        error: "could not hash password"
                     })
                 }
                 else{
-                    var users = new admin({
+                     new admin({
                         _id: new mongoose.Types.ObjectId,
                         userName: req.body.username,
                         password: hash
                     })
-                    users.save()
+                    .save()
                     .then(result => {
-                        res.json({
+                        res.status(200).json({
                             result: "admin account created successfuly"
                         })
                     })
                     .catch(err =>{
-                        res.json({
-                            error: err
+                        res.status(500).json({
+                            error: "account has not been created, an error has occured"
                         })
                     })
                 }
@@ -129,18 +124,15 @@ router.post("/signup",(req,res,next) =>{
         }
     })
     .catch(err => {
-        res.json({
-            error: err
+        res.status(500).json({
+            error: "an error occured, try again"
         })
     })
 })
 
 // admin login router
 router.post("/login", (req,res,next) =>{
-    var adm = {
-        userName: req.body.username
-    }
-    admin.findOne({adm})
+    admin.find({userName: req.body.username})
     .exec()
     .then(results => {
         if(results.length < 1){
@@ -149,20 +141,22 @@ router.post("/login", (req,res,next) =>{
             })
         }
         else{
-            bcrypt.compare(req.body.password, results.password, (err,valid)=>{
+            console.log(results[0].password);
+            bcrypt.compare(req.body.password, results[0].password, (err,valid)=>{
+                console.log(results.password);
                 if(err){
                     res.json({
-                        message: "Authentication failed"
+                        message: "an error occured"
                     })
                 }
                 else if(valid === true){
-                    jwt.sign({
+                    var token =jwt.sign({
                         userName: results.userName,
                         userId: results._id
                     },
-                    process.env.JWT_KEY,
+                    "dbkdbkqrjgrvgcwtkrnhrigukbqk",
                     {
-                        expiresIn: "5h"
+                        expiresIn: "24h"
                     });
                     res.json({
                         message:  "Authentication succesfull",
@@ -179,7 +173,7 @@ router.post("/login", (req,res,next) =>{
     })
     .catch(err =>{
         res.json({
-            error: err
+            error: "an error occured"
         })
     })
 })

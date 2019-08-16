@@ -20,7 +20,7 @@ const members_schema = mongoose.Schema({
     },
     contactDetails: {
         phoneNumber: {
-            type: String,
+            type: Number,
             required: true
         },
         emailAddress: {

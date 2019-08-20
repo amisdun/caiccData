@@ -5,7 +5,8 @@ const jwt = require("jsonwebtoken");
 const router = express.Router(); 
 mongoose.Promise = global.Promise;
 //connecting to the database
-const url = "mongodb://localhost/myDb";
+// const uri = "mongodb+srv://dunamis_mikel:amis#dun@dunamis-8ryxm.mongodb.net/test?retryWrites=true&w=majority";
+const url = "mongodb://localhost/27017/myDb";
 mongoose.connect(url);
 mongoose.connection.once("open",function(){
     console.log("database connected succefully")
@@ -69,6 +70,7 @@ router.post("/membersData",(req,res,next) => {
             .save()
             .then(detail =>{
                 res.json({
+                    msg: "succes",
                     message: "you have succesfull registered as a member of CAICC"
                 })
             })
